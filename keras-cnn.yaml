@@ -1,0 +1,10 @@
+job:
+  name: "keras-cnn-cifar-gpus"
+  execution:
+    image: "tensorflow/tensorflow:1.4.1-gpu-py3"
+    command: "apt-get install software-properties-common && add-apt-repository ppa:deadsnakes/ppa && apt-get update && apt-get install -y python3.6 && pip install --no-cache-dir -r requirements.txt && python3 train.py"
+    completionTime: "1"
+    resources:
+      cpus: 3
+      memory: 50000
+      gpus: 1

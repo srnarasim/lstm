@@ -1,7 +1,8 @@
 numpy
-keras
+keras==2.1.2
+pandas
+tensorflow==1.4.1
 dill
-tensorflow
 annoy
 tqdm
 nltk

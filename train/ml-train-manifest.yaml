@@ -1,0 +1,10 @@
+job:
+  name: "keras-lstm-summarization-gpus"
+  execution:
+    image: "ml-foundation/tensorflow:1.4.0-gpu-py3.6"
+    command: "pip install --upgrade tensorflow-gpu==1.4.1 && pip install --no-cache-dir -r requirements.txt && python --version && python train.py --sample_size=11000 --input_csv=/data/github_issues.csv"
+    completionTime: "1"
+    resources:
+      cpus: 3
+      memory: 20000
+      gpus: 1

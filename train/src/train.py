@@ -2,6 +2,7 @@ import pandas as pd
 import logging
 import dill as dpickle
 import numpy as np
+import argparse
 from ktext.preprocess import processor
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.models import Model
@@ -15,12 +16,23 @@ pd.set_option('display.max_colwidth', 500)
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
-data_file = '/data/github_issues.csv'
+parser = argparse.ArgumentParser()
+parser.add_argument("--input_csv", default="/data/github_issues.csv")
+parser.add_argument("--sample_size", type=int, default="1200000")
+parser.add_argument("--output_dir", default=".")
+args=parser.parse_args()
+print(args)
+
+#data_file = '/data/github_issues.csv'
+data_file = args.input_csv
 
 use_sample_data=True
+if args.sample_size == -1:
+    use_sample_data=False
+
 
 if use_sample_data:
-    training_data_size=2000
+    training_data_size=args.sample_size
     traindf, testdf = train_test_split(pd.read_csv(data_file).sample(n=training_data_size),
                                    test_size=.10)
 else:
@@ -46,24 +58,28 @@ title_pp = processor(append_indicators=True, keep_n=4500,
 train_title_vecs = title_pp.fit_transform(train_title_raw)
 
 
+body_pkl_file = args.output_dir + '/body_pp.dpkl'
+train_body_vecs_file = args.output_dir + '/train_body_vecs.npy'
+title_pkl_file = args.output_dir + '/title_pp.dpkl'
+train_title_vecs_file = args.output_dir + '/train_title_vecs.npy'
+
 # Save the preprocessor
-with open('body_pp.dpkl', 'wb') as f:
+with open(body_pkl_file, 'wb') as f:
     dpickle.dump(body_pp, f)
 
-with open('title_pp.dpkl', 'wb') as f:
+with open(title_pkl_file, 'wb') as f:
     dpickle.dump(title_pp, f)
 
 # Save the processed data
-np.save('train_title_vecs.npy', train_title_vecs)
-np.save('train_body_vecs.npy', train_body_vecs)
+np.save(train_title_vecs_file, train_title_vecs)
+np.save(train_body_vecs_file, train_body_vecs)
 
 
+encoder_input_data, doc_length = load_encoder_inputs(train_body_vecs_file)
+decoder_input_data, decoder_target_data = load_decoder_inputs(train_title_vecs_file)
 
-encoder_input_data, doc_length = load_encoder_inputs('train_body_vecs.npy')
-decoder_input_data, decoder_target_data = load_decoder_inputs('train_title_vecs.npy')
-
-num_encoder_tokens, body_pp = load_text_processor('body_pp.dpkl')
-num_decoder_tokens, title_pp = load_text_processor('title_pp.dpkl')
+num_encoder_tokens, body_pp = load_text_processor(body_pkl_file)
+num_decoder_tokens, title_pp = load_text_processor(title_pkl_file)
 
 
 
@@ -116,8 +132,7 @@ seq2seq_Model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 seq2seq_Model.compile(optimizer=optimizers.Nadam(lr=0.001), loss='sparse_categorical_crossentropy')
 
 
-
-script_name_base = 'tutorial_seq2seq'
+script_name_base = 'lstm_seq2seq'
 csv_logger = CSVLogger('{:}.log'.format(script_name_base))
 model_checkpoint = ModelCheckpoint('{:}.epoch{{epoch:02d}}-val{{val_loss:.5f}}.hdf5'.format(script_name_base),
                                    save_best_only=True)
@@ -129,7 +144,7 @@ history = seq2seq_Model.fit([encoder_input_data, decoder_input_data], np.expand_
           epochs=epochs,
           validation_split=0.12, callbacks=[csv_logger, model_checkpoint])
 
-seq2seq_Model.save('seq2seq_model_tutorial.h5')
+seq2seq_Model.save( args.output_dir + '/seq2seq_model.h5')
 
 
 seq2seq_inf = Seq2Seq_Inference(encoder_preprocessor=body_pp,
@@ -143,7 +158,7 @@ seq2seq_inf.demo_model_predictions(n=50, issue_df=testdf)
 bleu_score = seq2seq_inf.evaluate_model(holdout_bodies=testdf.body.tolist(),
                                         holdout_titles=testdf.issue_title.tolist())
 
-print('BLEU Score (avg of BLUE 1-4) on Holdout Set: {bleu_score * 100}')
+print(f"BLEU Score (avg of BLUE 1-4) on Holdout Set: {bleu_score * 100}")
 
 
 

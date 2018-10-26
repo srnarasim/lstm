@@ -299,13 +299,13 @@ class Seq2Seq_Inference(object):
     if url:
       print(url)
 
-    print("Issue Body:\n {} \n".format(body_text))
+    print("Issue Body:\n {} \n".format(body_text.encode('utf-8')))
 
     if title_text:
-      print("Original Title:\n {}".format(title_text))
+      print("Original Title:\n {}".format(title_text.encode('utf-8')))
 
     emb, gen_title = self.generate_issue_title(body_text)
-    print("\n****** Machine Generated Title (Prediction) ******:\n {}".format(gen_title))
+    print("\n****** Machine Generated Title (Prediction) ******:\n {}".format(gen_title.encode('utf-8')))
 
     if self.nn:
       # return neighbors and distances

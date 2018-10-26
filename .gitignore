@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+train/out
+body_pp.dpkl
+seq2seq_model.h5
+title_pp.dpkl
+out.txt

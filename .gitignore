@@ -107,3 +107,6 @@ body_pp.dpkl
 seq2seq_model.h5
 title_pp.dpkl
 out.txt
+*.npy
+*.hdf5
+*.h5
